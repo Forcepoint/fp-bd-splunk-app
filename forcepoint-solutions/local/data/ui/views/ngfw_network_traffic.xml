@@ -1,0 +1,680 @@
+<form refresh="3600">
+  <label>Network Traffic</label>
+  <search id="base_search">
+    <query>index="forcepoint" sourcetype="next-generation-firewall" | table _time COMPID SENDERTYPE ACTION ALERTSEVERITY SRC DST DPORT EVENT FACILITY INFOMSG PEERSECURITYGATEWAY SITCATEGORY USERNAME USERDOMAIN SERVICE PROTOCOL</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <search id="web_search">
+    <query>index="forcepoint" sourcetype="next-generation-firewall" HTTPREQUESTHOST=* | table _time COMPID HTTPREQUESTHOST ADDITIONALSITUATION SRC SITUATION ACTION SITCATEGORY | replace "www.*" with * in HTTPREQUESTHOST</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <search id="application_search">
+    <query>index="forcepoint" sourcetype="next-generation-firewall" IPSAPPID=* | table _time COMPID IPSAPPID ADDITIONALSITUATION SRC SITUATION ACTION SITCATEGORY | rename IPSAPPID as "Network Application"</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <search id="new_domain_search" base="web_search">
+    <query>| stats earliest(_time) as start, latest(_time) as stop by HTTPREQUESTHOST</query>
+  </search>
+  <search id="network_applications_count" base="application_search">
+    <query>| stats count by "Network Application" | sort -count | rename count as "Network Application Count" </query>
+  </search>
+  <search id="new_network_applications" base="application_search">
+    <query>| stats earliest(_time) as start, latest(_time) as stop by "Network Application"</query>
+  </search>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label>Time Picker</label>
+      <default>
+        <earliest>@mon</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="link" token="unused" id="resized_input">
+      <label>Choose a view</label>
+      <choice value="web">Web Traffic</choice>
+      <choice value="application">Application Traffic</choice>
+      <choice value="service">Service Traffic</choice>
+      <default>Web Traffic</default>
+      <change>
+        <condition value="web">
+          <set token="showWeb">true</set>
+          <unset token="showApplication"></unset>
+          <unset token="showService"></unset>
+        </condition>
+        <condition value="application">
+          <set token="showApplication">true</set>
+          <unset token="showWeb"></unset>
+          <unset token="showService"></unset>
+        </condition>
+        <condition value="service">
+          <set token="showService">true</set>
+          <unset token="showWeb"></unset>
+          <unset token="showApplication"></unset>
+        </condition>
+      </change>
+    </input>
+  </fieldset>
+  <row depends="$alwaysHideCSSPanel$">
+    <panel>
+      <html>
+        <style>
+          #resized_input {
+            width: 450px;
+          }
+          .dashboard-panel h2{
+            text-align: center !important;
+            font-weight: bold !important;
+          }
+          #chartWithHiddenDataLabels .highcharts-series-1 .highcharts-data-label text tspan 
+          {
+            visibility:hidden !important;
+          }
+          #chartWithHiddenDataLabels .highcharts-series-2 .highcharts-data-label text tspan 
+          {
+            visibility:hidden !important;
+          }
+        </style>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table depends="$showWeb$">
+        <title>New domain names detected in last 24 hours</title>
+        <search base="new_domain_search">
+          <query>| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| convert ctime(yesterday), ctime(start), ctime(stop) 
+| sort -start 
+| table HTTPREQUESTHOST start stop 
+| rename HTTPREQUESTHOST as "Host" 
+| rename start as "First Date Detection" 
+| rename stop as "Last Date Detection"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$showWeb$">
+        <title>New domain names detected in last 7 days</title>
+        <search base="new_domain_search">
+          <query>| eval last_week_up_todate=relative_time(now(), "-7d@d") 
+| where start &gt; last_week_up_todate 
+| convert ctime(last_week_up_todate), ctime(start), ctime(stop) 
+| sort -start 
+| table HTTPREQUESTHOST start stop 
+| rename HTTPREQUESTHOST as "Host" 
+| rename start as "First Date Detection" 
+| rename stop as "Last Date Detection"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single depends="$showWeb$">
+        <search base="web_search">
+          <query>| eval full_src = COMPID + " - " + if(isnotnull(SRC), SRC , "No src")
+| stats count by full_src
+| stats count 
+| rename full_src as "Firewall - Src IP Address" 
+| rename count as "Number of Clients"</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="underLabel">Web Users</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showWeb$">
+        <title>Total number of web traffic per user IP address and domain name</title>
+        <search base="web_search">
+          <query>| eval full_src = COMPID + " - " + if(isnotnull(SRC), SRC , "No src") 
+| stats count by full_src HTTPREQUESTHOST
+| sort -count 
+| rename full_src as "Firewall - Src IP Address" 
+| rename HTTPREQUESTHOST as "Domain Name" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single depends="$showWeb$">
+        <search base="web_search">
+          <query>| stats count by HTTPREQUESTHOST 
+| stats count 
+| rename count as "Number of Domains"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Domain Names</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showWeb$">
+        <title>Web traffic per domain name includes blocked and allowed actions</title>
+        <search base="web_search">
+          <query>| stats count by HTTPREQUESTHOST 
+| sort -count 
+| rename HTTPREQUESTHOST as "Domain" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single depends="$showWeb$">
+        <search base="web_search">
+          <query>| stats count by SITCATEGORY 
+| stats count 
+| rename count as "Number of Parent Web Categories"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Parent Web Categories</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showWeb$">
+        <title>Parent Web categories match includes blocked and allowed actions</title>
+        <search base="web_search">
+          <query>| stats count by SITCATEGORY 
+| sort -count 
+| rename SITCATEGORY as "Parent Application Category" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+    <panel>
+      <single depends="$showWeb$">
+        <search base="web_search">
+          <query>| stats count by ADDITIONALSITUATION 
+| stats count 
+| rename count as "Number of URL Categories"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Web Categories</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showWeb$">
+        <title>Web categories match includes blocked and allowed actions</title>
+        <search base="web_search">
+          <query>| stats count by ADDITIONALSITUATION 
+| sort -count 
+| rename ADDITIONALSITUATION as "Web Category" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table depends="$showApplication$">
+        <title>New network applications detected in last 24 hours</title>
+        <search base="new_network_applications">
+          <query>| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| convert ctime(yesterday), ctime(start), ctime(stop) 
+| sort -start 
+| table "Network Application" start stop 
+| rename start as "First Date Detection" 
+| rename stop as "Last Date Detection"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$showApplication$">
+        <title>New network applications detected in last 7 days</title>
+        <search base="new_network_applications">
+          <query>| eval week_todate=relative_time(now(), "-1w@w") 
+| where start &gt; week_todate 
+| convert ctime(week_todate), ctime(start), ctime(stop) 
+| sort -start 
+| table "Network Application" start stop 
+| rename start as "First Date Detection" 
+| rename stop as "Last Date Detection"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single depends="$showApplication$">
+        <search base="application_search">
+          <query>| eval full_src = COMPID + " - " + if(isnotnull(SRC), SRC , "No src")
+| stats count by full_src
+| stats count 
+| rename full_src as "Firewall - Src IP Address" 
+| rename count as "Number of Clients"</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="underLabel">Application Users</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showApplication$">
+        <title>Total number of application traffic per user IP address and network application</title>
+        <search base="application_search">
+          <query>| eval full_src = COMPID + " - " + if(isnotnull(SRC), SRC , "No src") 
+| stats count by full_src "Network Application"
+| sort -count 
+| rename full_src as "Firewall - Src IP Address" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single depends="$showApplication$">
+        <search base="network_applications_count">
+          <query>| stats count as "Total Network Application Count"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="height">112</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xdc4e41"]</option>
+        <option name="rangeValues">[1e+24]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Network Applications Detected</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showApplication$">
+        <title>All network applications detected</title>
+        <search base="network_applications_count"></search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single depends="$showApplication$">
+        <search base="application_search">
+          <query>| stats count by SITCATEGORY 
+| stats count 
+| rename count as "Number of Parent Application Categories"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Parent Application Categories</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showApplication$">
+        <title>Parent Application categories match includes blocked and allowed actions</title>
+        <search base="application_search">
+          <query>| stats count by SITCATEGORY 
+| sort -count 
+| rename SITCATEGORY as "Parent Application Category" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+    <panel>
+      <single depends="$showApplication$">
+        <search base="application_search">
+          <query>| stats count by ADDITIONALSITUATION 
+| stats count 
+| rename count as "Number of Application Categories"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Application Categories</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showApplication$">
+        <title>Application categories match includes blocked and allowed actions</title>
+        <search base="application_search">
+          <query>| stats count by ADDITIONALSITUATION 
+| sort -count 
+| rename ADDITIONALSITUATION as "Application Category" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$showService$">
+      <title>Facility Type Count</title>
+      <html>
+      <style>
+        #trillsCenterInspection .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+        #trillsCenterPacket .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterInspection">
+        <search base="base_search">
+          <query>| search FACILITY=Inspection | stats count by FACILITY</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="height">196</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x555","0x555"]</option>
+        <option name="rangeValues">[1e+44]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Total count</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single id="trillsCenterPacket" depends="$showService$">
+        <search base="base_search">
+          <query>| search FACILITY="Packet Filtering" | stats count by FACILITY</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="height">212</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x555","0x555"]</option>
+        <option name="rangeValues">[1e+44]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Total count</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$showService$">
+      <title>IP Protocols</title>
+      <chart>
+        <search base="base_search">
+          <query>| search PROTOCOL=* | stats count by PROTOCOL 
+| sort -count 
+| rename PROTOCOL as protocol
+| lookup protocol_lookup.csv protocol OUTPUT protocolDesc 
+| eval "IP Protocol" = "Protocol Number " + protocol + if(isnotnull(protocolDesc), " - " + protocolDesc, "") 
+| rename count as "IP Protocol Count"| table "IP Protocol" "IP Protocol Count" </query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.showPercent">1</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.001</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$showService$">
+      <title>Services Used</title>
+      <table>
+        <search base="base_search">
+          <query>|  stats count by SERVICE 
+| sort -count 
+| rename SERVICE as Service
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$showService$">
+      <title>SSH Sessions by Destination</title>
+      <chart>
+        <search base="base_search">
+          <query>| search SERVICE=SSH | stats count by DST </query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.showPercent">1</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.005</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+    <panel depends="$showService$">
+      <title>All SSH Sessions</title>
+      <table>
+        <search base="base_search">
+          <query>| search SERVICE=SSH | table _time COMPID SENDERTYPE ACTION ALERTSEVERITY SRC DST DPORT EVENT FACILITY INFOMSG PEERSECURITYGATEWAY SITCATEGORY USERNAME USERDOMAIN</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

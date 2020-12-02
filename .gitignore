@@ -1,0 +1,4 @@
+build/fp-splunk-app-v1.tar.gz
+.commands
+.temp/
+Splunk.License

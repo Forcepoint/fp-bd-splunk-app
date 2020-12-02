@@ -1,0 +1,95 @@
+[views/main]
+version = 8.0.4
+modtime = 1600177386.574725000
+
+[views/pa_summary]
+version = 8.0.4
+modtime = 1600433662.487414000
+
+[views/csg_summary]
+version = 8.0.4
+modtime = 1600167128.318951000
+
+[views/csg_emails]
+owner = admin
+version = 8.0.4
+modtime = 1600168558.612910000
+
+[views/csg_emails_security]
+owner = admin
+version = 8.0.4
+modtime = 1600185648.771897000
+
+[views/csg_web_security]
+owner = admin
+version = 8.0.4
+modtime = 1600167890.409633000
+
+[views/csg_web]
+owner = admin
+version = 8.0.4
+modtime = 1600167968.883332000
+
+[savedsearches/Private%20Access%20-%20Weekly%20Refused%20Actions]
+access = read : [ * ], write : [ admin, power ]
+export = none
+owner = admin
+version = 8.0.4
+modtime = 1600169268.486204000
+
+[savedsearches/Private%20Access%20-%20Critical%20Severity]
+owner = admin
+version = 8.0.4
+modtime = 1600169446.208373000
+
+[views/pa_network_applications]
+version = 8.0.4
+modtime = 1600434047.027179000
+
+[views/pa_web_traffic]
+version = 8.0.4
+modtime = 1600434083.821519000
+
+[views/pa_file_traffic]
+version = 8.0.4
+modtime = 1600434022.735429000
+
+[views/pa_blocked_traffic]
+version = 8.0.4
+modtime = 1600433996.204872000
+
+[views/pa_services]
+version = 8.0.4
+modtime = 1600434112.212220000
+
+[views/pa_network_traffic]
+version = 8.0.4
+modtime = 1600434132.772889000
+
+[views/pa_dynamic_formbased]
+version = 8.0.4
+modtime = 1600434179.613600000
+
+[savedsearches/Cloud%20Security%20Gateway%20-%20Critical%20Web%20Severity]
+owner = admin
+version = 8.0.4
+modtime = 1600680637.401545000
+
+[savedsearches/Cloud%20Security%20Gateway%20-%20Email%20Virus%20Detection]
+owner = admin
+version = 8.0.4
+modtime = 1600680947.746569000
+
+[savedsearches/Cloud%20Security%20Gateway%20-%20Weekly%20Blocked%20Web%20Actions]
+access = read : [ * ], write : [ admin, power ]
+export = none
+owner = admin
+version = 8.0.4
+modtime = 1600683222.237090000
+
+[savedsearches/Cloud%20Security%20Gateway%20-%20Weekly%20Quarantined%20Email%20Actions]
+access = read : [ * ], write : [ admin, power ]
+export = none
+owner = admin
+version = 8.0.4
+modtime = 1600683231.595208000

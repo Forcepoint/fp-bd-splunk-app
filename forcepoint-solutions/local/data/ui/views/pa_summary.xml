@@ -1,0 +1,373 @@
+<form>
+  <label>Private Access Traffic Summary</label>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label>Time Picker</label>
+      <default>
+        <earliest>@w0</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <html>
+      <style>
+        #trillsCenterNetwork .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterNetwork">
+        <title>Network Traffic Dashboard - Daily sum trend</title>
+        <search>
+          <query>index="forcepoint" sourcetype="private-access" facility_title = "Packet Filtering" | table _time acc_rx_bytes acc_tx_bytes
+| eval total_bytes = acc_rx_bytes + acc_tx_bytes 
+| eval acc_rx_mb=round((acc_rx_bytes)/1000000,1) 
+| eval acc_tx_mb=round((acc_tx_bytes)/1000000,1) 
+| eval total_mb=round((total_bytes)/1000000,1) 
+| timechart span=1day sum(acc_rx_mb) as "Inbound Traffic", sum(acc_tx_mb) as "Outbound Traffic", sum(total_mb) as "Total Traffic"
+          </query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="height">254</option>
+        <option name="numberPrecision">0.0</option>
+        <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+        <option name="rangeValues">[1e+26]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">MB</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/pa_network_traffic</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+      <style>
+        #trillsCenterBlocked .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterBlocked">
+        <title>Blocked Traffic Dashboard - Daily count trend</title>
+        <search>
+          <query>index="forcepoint" sourcetype="private-access" situation_title=Connection_Refused | timechart span=1day count</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xdc4e41","0xdc4e41"]</option>
+        <option name="rangeValues">[100000000000000000]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Blocked Connections</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/pa_blocked_traffic</link>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Application Traffic Dashboard</title>
+        <search>
+          <query>index="forcepoint" sourcetype="private-access" ips_appid_title=* | table _time ips_appid_title
+| stats earliest(_time) as start by ips_appid_title 
+| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| stats count</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">New network application detected in the last 24 hours</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/pa_network_applications</link>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Web Traffic Dashboard</title>
+        <search>
+          <query>index="forcepoint" sourcetype="private-access" http_request_host=* | table _time http_request_host
+| replace "www.*" with * in http_request_host 
+| stats earliest(_time) as start by http_request_host 
+| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| stats count</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf1813f","0xf1813f"]</option>
+        <option name="rangeValues">[1e+21]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">New Hosts detected in the last 24 hours</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/pa_web_traffic</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+      <style>
+        #trillsCenterDownload .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterDownload">
+        <title>File Traffic Dashboard</title>
+        <search>
+          <query>index="forcepoint" sourcetype="private-access" file_transfer_dir_title=* | search file_transfer_dir_title=Download | stats count by file_transfer_dir_title</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="height">180</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x53a051"]</option>
+        <option name="rangeValues">[10000000000]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/pa_file_traffic</link>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <html>
+      <style>
+        #trillsCenterUpload .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterUpload">
+        <title>File Traffic Dashboard</title>
+        <search>
+          <query>index="forcepoint" sourcetype="private-access" file_transfer_dir_title=* | search file_transfer_dir_title=Upload | stats count by file_transfer_dir_title</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="height">180</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x53a051"]</option>
+        <option name="rangeValues">[10000000000]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/pa_file_traffic</link>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <html>
+      <style>
+        #trillsCenterInspection .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterInspection">
+        <title>Services Traffic Dashboard</title>
+        <search>
+          <query>index="forcepoint" sourcetype="private-access" facility_title=Inspection | stats count by facility_title</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x555","0x555"]</option>
+        <option name="rangeValues">[1e+44]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Total count</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/pa_services</link>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <html>
+      <style>
+        #trillsCenterPacket .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterPacket">
+        <title>Services Traffic Dashboard</title>
+        <search>
+          <query>index="forcepoint" sourcetype="private-access" facility_title="Packet Filtering" | stats count by facility_title</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x555","0x555"]</option>
+        <option name="rangeValues">[1e+44]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Total count</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/pa_services</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+      <style>
+        #trillsCenterDrillDown .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterDrillDown">
+        <search>
+          <query>index="forcepoint" 
+| head 1 
+| stats count 
+| eval dashboard="Traffic Drill Down Dashboard" 
+| table dashboard</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xdc4e41","0xdc4e41"]</option>
+        <option name="rangeValues">[100000000000000000]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/pa_dynamic_formbased</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+</form>

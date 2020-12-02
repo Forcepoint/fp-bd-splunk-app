@@ -1,0 +1,394 @@
+<form theme="light">
+  <label>Web Traffic</label>
+  <search id="base_search">
+    <query>index="forcepoint" sourcetype="private-access" http_request_host=* | table _time http_request_host additional_situation_title srczone_title acc_rx_bytes acc_tx_bytes src situation_title dst dport sport protocol  action_title</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <search id="new_domain_base_search">
+    <query>index="forcepoint" sourcetype="private-access" http_request_host=* | replace "www.*" with * in http_request_host | stats earliest(_time) as start, latest(_time) as stop by http_request_host 
+</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label>Time Picker</label>
+      <default>
+        <earliest>-2mon</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <single>
+        <title>Total web traffic in MB - Weekly trend</title>
+        <search base="base_search">
+          <query>| eval total_bytes = acc_rx_bytes + acc_tx_bytes 
+| eval total_mb=round((total_bytes)/1000000,1) 
+| search total_mb != 0.0 
+| timechart span=1w sum(total_mb) as "Total Traffic in MB"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0.0</option>
+        <option name="rangeColors">["0x006d9c","0xdc4e41"]</option>
+        <option name="rangeValues">[1e+27]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">MB</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <chart>
+        <title>Total number of web traffic per site configured</title>
+        <search base="base_search">
+          <query>| stats count by srczone_title 
+| sort -count 
+| rename srczone_title as "Site" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">bar</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title>Total number of web traffic hits</title>
+        <search base="base_search">
+          <query>| chart count 
+| rename count as "Number of web traffic hits"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x006d9c","0xdc4e41"]</option>
+        <option name="rangeValues">[1e+25]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">0</option>
+        <option name="showTrendIndicator">0</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Total number of allowed web categories in the traffic</title>
+        <search base="base_search">
+          <query>| search situation_title!=Connection_Refused 
+| transaction src, dst, dport, sport, protocol, srczone_title maxspan=3s 
+| eval status=if(like(action_title, "%Discard%"), 1, 0) 
+| where status = 0 
+| stats count by additional_situation_title 
+| stats count 
+| rename count as "Number of Allowed Web Categories"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051", "0x0877a6", "0xf8be34", "0xf1813f", "0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Total number of blocked web categories in the traffic</title>
+        <search base="base_search">
+          <query>| search situation_title=Connection_Refused
+| stats count by additional_situation_title 
+| stats count 
+| rename count as "Number of Blocked URL Categories"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051", "0x0877a6", "0xf8be34", "0xf1813f", "0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>New domain names detected in last 24 hours</title>
+        <search base="new_domain_base_search">
+          <query>| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| convert ctime(yesterday), ctime(start), ctime(stop) 
+| sort -start 
+| table http_request_host start stop 
+| rename http_request_host as "Host" 
+| rename start as "First Date Detection" 
+| rename stop as "Last Date Detection"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>New domain names detected in last 7 days</title>
+        <search base="new_domain_base_search">
+          <query>| eval last_week_up_todate=relative_time(now(), "-7d@d") 
+| where start &gt; last_week_up_todate 
+| convert ctime(last_week_up_todate), ctime(start), ctime(stop) 
+| sort -start 
+| table http_request_host start stop 
+| rename http_request_host as "Host" 
+| rename start as "First Date Detection" 
+| rename stop as "Last Date Detection"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title>Number of web categories</title>
+        <search base="base_search">
+          <query>| stats count by additional_situation_title 
+| stats count 
+| rename count as "Number of URL Categories"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table>
+        <title>Web categories match includes blocked and allowed actions</title>
+        <search base="base_search">
+          <query>| stats count by additional_situation_title 
+| sort -count 
+| rename additional_situation_title as "Web Category" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title>Number of domain names</title>
+        <search base="base_search">
+          <query>| replace "www.*" with * in http_request_host 
+| stats count by http_request_host 
+| stats count 
+| rename count as "Number of Domains"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051", "0x0877a6", "0xf8be34", "0xf1813f", "0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table>
+        <title>Web traffic per domain name includes blocked and allowed actions</title>
+        <search base="base_search">
+          <query>| replace "www.*" with * in http_request_host 
+| stats count by http_request_host 
+| sort -count 
+| rename http_request_host as "Domain" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title>Number of blocked domain names</title>
+        <search base="base_search">
+          <query>| search situation_title=Connection_Refused 
+| replace "www.*" with * in http_request_host 
+| stats count by http_request_host 
+| stats count 
+| rename count as "Number of Blocked Domains"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051", "0x0877a6", "0xf8be34", "0xf1813f", "0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table>
+        <title>List of blocked domain names detected in traffic</title>
+        <search base="base_search">
+          <query>| search situation_title=Connection_Refused 
+| replace "www.*" with * in http_request_host 
+| stats count by http_request_host 
+| rename count as "Blocked Domain Names"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title>Number of web traffic users</title>
+        <search base="base_search">
+          <query>| eval full_src = if(isnotnull(srczone_title), srczone_title + " - ", "") + if(isnotnull(src), src , "No src") 
+| stats count by full_src 
+| stats count 
+| rename full_src as "Branch - Src IP Address" 
+| rename count as "Number of Clients"</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+      </single>
+    </panel>
+    <panel>
+      <table>
+        <title>Total number of web traffic per user IP address per each configured site</title>
+        <search base="base_search">
+          <query>| eval full_src = if(isnotnull(srczone_title), srczone_title + " - ", "") + if(isnotnull(src), src , "No src") 
+| stats count by full_src 
+| sort -count 
+| rename full_src as "Branch - Src IP Address" 
+| rename count as "Hits"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="drilldown">row</option>
+        <option name="rowNumbers">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

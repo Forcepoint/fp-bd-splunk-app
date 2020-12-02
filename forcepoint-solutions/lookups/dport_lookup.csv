@@ -1,0 +1,22 @@
+dport,dportDesc
+20,File Transfer Protocol (FTP)
+21,File Transfer Protocol (FTP)
+22,Secure Shell (SSH)
+23,Telnet
+25,Simple Mail Transfer Protocol (SMTP)
+50,IPSec
+51,IPSec	
+53,Domain Name System (DNS)
+67,Dynamic Host Configuration Protocol (DHCP)
+68,Dynamic Host Configuration Protocol (DHCP)
+69,Trivial File Transfer Protocol (TFTP)
+80,HyperText Transfer Protocol (HTTP)
+110,Post Office Protocol (POP3)
+119,Network News Transport Protocol (NNTP)
+123,Network Time Protocol (NTP)
+143,Internet Message Access Protocol (IMAP4)
+161,Simple Network Management Protocol (SNMP)
+162,Simple Network Management Protocol (SNMP)
+389,Lightweight Directory Access Protocol
+443,HTTP with Secure Sockets Layer (SSL)
+3389,Remote Desktop Protocol

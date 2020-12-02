@@ -1,0 +1,9 @@
+<nav search_view="search">
+
+    <view name="main" default='true' />
+
+    <view name="reports" />
+
+    <view name="alerts" />
+
+</nav>

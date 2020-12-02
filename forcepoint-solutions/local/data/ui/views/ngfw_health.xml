@@ -1,0 +1,739 @@
+<form refresh="3600">
+  <label>System Health Traffic</label>
+  <search id="base_search">
+    <query>index="forcepoint" sourcetype="next-generation-firewall" | table _time COMPID FACILITY SITUATION TYPE INFOMSG ALERT ALERTSEVERITY USERDOMAIN USERNAME PEERSECURITYGATEWAY SERVICE EVENT ACCRXBYTES ACCTXBYTES</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label>Time Picker</label>
+      <default>
+        <earliest>@mon</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="link" token="unused" id="resized_input">
+      <label>Choose a view</label>
+      <choice value="info">Info</choice>
+      <choice value="details">Details</choice>
+      <default>Info</default>
+      <change>
+        <condition value="info">
+          <set token="showInfo">true</set>
+          <unset token="showDetails"></unset>
+        </condition>
+        <condition value="details">
+          <set token="showDetails">true</set>
+          <set token="showInfo">true</set>
+        </condition>
+      </change>
+    </input>
+  </fieldset>
+  <row depends="$alwaysHideCSSPanel$">
+    <panel>
+      <html>
+        <style>
+          #resized_input {
+            width: 300px;
+          }
+          .dashboard-panel h2{
+            text-align: center !important;
+            font-weight: bold !important;
+          }
+          #chartWithHiddenDataLabels .highcharts-series-1 .highcharts-data-label text tspan 
+          {
+            visibility:hidden !important;
+          }
+          #chartWithHiddenDataLabels .highcharts-series-2 .highcharts-data-label text tspan 
+          {
+            visibility:hidden !important;
+          }
+        </style>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+       <style>
+        #trillsCenterSystemOffline #trillsCenterSystemOfflineDaily .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+       </style>
+      </html>
+      <single id="trillsCenterSystemOffline" depends="$showInfo$">
+        <search base="base_search">
+          <query>| search FACILITY="Cluster Daemon" SITUATION="System_Cluster-Protocol-Node-Offline" TYPE=Notification | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Overall Nodes Went Offline</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+      <single id="trillsCenterSystemOfflineDaily" depends="$showInfo$">
+        <title>Nodes Went Offline Today</title>
+        <search base="base_search">
+          <query>| search FACILITY="Cluster Daemon" SITUATION="System_Cluster-Protocol-Node-Offline" TYPE=Notification | timechart span=1day dc(SITUATION)</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">0</option>
+        <option name="showTrendIndicator">0</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Nodes Went Offline Today</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showDetails$">
+        <search base="base_search">
+          <query>| search FACILITY="Cluster Daemon" SITUATION="System_Cluster-Protocol-Node-Offline" TYPE=Notification</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+       <style>
+        #trillsCenterSystemOnline #trillsCenterSystemOnlineDaily .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+       </style>
+      </html>
+      <single id="trillsCenterSystemOnline" depends="$showInfo$">
+        <search base="base_search">
+          <query>| search FACILITY="Cluster Daemon" SITUATION="System_Cluster-Protocol-Node-Online" TYPE=Notification EVENT="Went online" | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x555","0x555"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Overall Nodes Went Online</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+      <single id="trillsCenterSystemOnlineDaily" depends="$showInfo$">
+        <title>Nodes Went Online Today</title>
+        <search base="base_search">
+          <query>| search FACILITY="Cluster Daemon" SITUATION="System_Cluster-Protocol-Node-Online" TYPE=Notification EVENT="Went online" | timechart span=1day dc(SITUATION)</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x555","0x53a051"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">0</option>
+        <option name="showTrendIndicator">0</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Nodes Went Online Today</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showDetails$">
+        <search base="base_search">
+          <query>| search FACILITY="Cluster Daemon" SITUATION="System_Cluster-Protocol-Node-Online" TYPE=Notification</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+       <style>
+        #trillsCenterSystemBoot #trillsCenterSystemBootDaily .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+       </style>
+      </html>
+      <single id="trillsCenterSystemBoot" depends="$showInfo$">
+        <search base="base_search">
+          <query>| search FACILITY="System Utilities" SITUATION="FW_System-Node-Booted" TYPE="System alert" | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x006d9c"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Overall Nodes Booted</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+      <single id="trillsCenterSystemBootDaily" depends="$showInfo$">
+        <title>Nodes Booted Today</title>
+        <search base="base_search">
+          <query>| search FACILITY="System Utilities" SITUATION="FW_System-Node-Booted" TYPE="System alert" | timechart span=1day dc(SITUATION)</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x555","0x555"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">0</option>
+        <option name="showTrendIndicator">0</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Nodes Booted Today</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showDetails$">
+        <search base="base_search">
+          <query>| search FACILITY="System Utilities" SITUATION="FW_System-Node-Booted" TYPE="System alert"</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+       <style>
+        #trillsCenterSystemPolicy .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+       </style>
+      </html>
+      <single id="trillsCenterSystemPolicy" depends="$showInfo$">
+        <search base="base_search">
+          <query>| search SITUATION="FW_System-Security-Policy-Reload" 
+| transaction COMPID, SITUATION, FACILITY, TYPE maxspan=2m | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Overall Policy Reloads</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showDetails$">
+        <search base="base_search">
+          <query>| search SITUATION="FW_System-Security-Policy-Reload" 
+| transaction COMPID, SITUATION, FACILITY, TYPE maxspan=1m | table _time COMPID FACILITY SITUATION TYPE INFOMSG ALERT ALERTSEVERITY USERDOMAIN USERNAME PEERSECURITYGATEWAY SERVICE EVENT ACCRXBYTES ACCTXBYTES</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+       <style>
+        #trillsCenterSystemLoginFailed .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+       </style>
+      </html>
+      <single id="trillsCenterSystemLoginFailed" depends="$showInfo$">
+        <search base="base_search">
+          <query>| search SITUATION="System_Engine-LOGIN_Failed" | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Overall Login Failed</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showDetails$">
+        <search base="base_search">
+          <query>| search SITUATION="System_Engine-LOGIN_Failed"</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+       <style>
+        #trillsCenterSystemLogin .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+       </style>
+      </html>
+      <single id="trillsCenterSystemLogin" depends="$showInfo$">
+        <search base="base_search">
+          <query>| search SITUATION="System_Engine-LOGIN_Event" | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Overall Login session opened</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showDetails$">
+        <search base="base_search">
+          <query>| search SITUATION="System_Engine-LOGIN_Event"</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$showDetails$">
+    <panel>
+      <title>Inbound Traffic</title>
+      <html/>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+       <style>
+        #trillsCenterSystemInbound .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+       </style>
+      </html>
+      <single id="trillsCenterSystemInbound" depends="$showInfo$">
+        <search base="base_search">
+          <query>| search ACCRXBYTES!=0 
+| stats latest(_time) as _time by COMPID 
+| eval today_an_hours_ago=relative_time(now(), "-1h") 
+| where _time &lt; today_an_hours_ago | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Nodes stooped reporting inbound logs in the last hour</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showDetails$">
+        <search base="base_search">
+          <query>| search ACCRXBYTES!=0 
+| stats latest(_time) as _time by COMPID 
+| eval today_an_hours_ago=relative_time(now(), "-1h") 
+| where _time &lt; today_an_hours_ago | eval "Last Inbound Event Time" = strftime(_time, "%Y-%d-%m %H:%M:%S") | table COMPID "Last Inbound Event Time" | sort - "Last Inbound Event Time"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$showDetails$">
+      <chart>
+        <search base="base_search">
+          <query>| timechart usenull=f span=1day sum(ACCRXBYTES) as "Inbound Traffic" by COMPID limit=0</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.axisTitleY2.visibility">collapsed</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="height">539</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">small</option>
+      </chart>
+    </panel>
+  </row>
+  <row depends="$showDetails$">
+    <panel>
+      <title>Outbound Traffic</title>
+      <html/>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+       <style>
+        #trillsCenterSystemOutpound .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+       </style>
+      </html>
+      <single id="trillsCenterSystemOutpound" depends="$showInfo$">
+        <search base="base_search">
+          <query>| search ACCTXBYTES!=0 
+| stats latest(_time) as _time by COMPID 
+| eval today_an_hours_ago=relative_time(now(), "-1h") 
+| where _time &lt; today_an_hours_ago | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Nodes stooped reporting outbound logs in the last hour</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showDetails$">
+        <search base="base_search">
+          <query>| search ACCTXBYTES!=0 
+| stats latest(_time) as _time by COMPID 
+| eval today_an_hours_ago=relative_time(now(), "-1h") 
+| where _time &lt; today_an_hours_ago | eval "Last Outbound Event Time" = strftime(_time, "%Y-%d-%m %H:%M:%S") | table COMPID "Last Outbound Event Time" | sort - "Last Outbound Event Time"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$showDetails$">
+      <chart>
+        <search base="base_search">
+          <query>| timechart usenull=f span=1day sum(ACCTXBYTES) as "Outbound Traffic" by COMPID limit=0</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.axisTitleY2.visibility">collapsed</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">small</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Recent Commands Logged by Node</title>
+      <html>
+       <style>
+        #trillsCenterSystem .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+       </style>
+      </html>
+      <single id="trillsCenterSystem" depends="$showInfo$">
+        <search base="base_search">
+          <query>| search FACILITY IN ("Cluster Daemon", "Cluster Protocol", "System Utilities") | table _time COMPID | timechart usenull=f span=1day count by COMPID limit=0</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">small</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">System Notifications</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showDetails$">
+        <search base="base_search">
+          <query>| search FACILITY IN ("Cluster Daemon", "Cluster Protocol", "System Utilities") | table _time COMPID FACILITY SITUATION TYPE INFOMSG ALERT ALERTSEVERITY EVENT</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Recent Errors Logged by Node</title>
+      <html>
+       <style>
+        #trillsCenterError .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+       </style>
+      </html>
+      <single id="trillsCenterError" depends="$showInfo$">
+        <search base="base_search">
+          <query>| search TYPE=Error | timechart usenull=f span=1day count by COMPID limit=0</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">small</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Errors</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showDetails$">
+        <search base="base_search">
+          <query>| search TYPE=Error | table _time COMPID FACILITY SITUATION TYPE INFOMSG ALERT ALERTSEVERITY USERDOMAIN USERNAME PEERSECURITYGATEWAY SERVICE</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>System Management Logs</title>
+      <table>
+        <search base="base_search">
+          <query>| search FACILITY=Management | table _time COMPID FACILITY SITUATION TYPE INFOMSG EVENT</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

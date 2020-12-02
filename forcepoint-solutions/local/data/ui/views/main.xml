@@ -1,0 +1,210 @@
+<dashboard>
+  <label>Forcepoint</label>
+  <description>Humans Are the New Perimeter</description>
+  <row>
+    <panel depends="$pa_panel_show$">
+      <html>
+      <style>
+        #trillsCenterPA .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterPA">
+        <search>
+          <progress>
+            <condition match="'job.resultCount' &gt; 0">
+              <set token="pa_panel_show">true</set>
+            </condition>
+            <condition>
+              <unset token="pa_panel_show"></unset>
+            </condition>
+          </progress>
+          <query>index="forcepoint" sourcetype="private-access"
+| head 1 
+| stats count 
+| where count = 1
+| eval app="Private Access" 
+| table app</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">True zero trust network access to internal applications</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/pa_summary</link>
+        </drilldown>
+      </single>
+    </panel>
+    <panel depends="$csg_panel_show$">
+      <html>
+      <style>
+        #trillsCenterCSG .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterCSG">
+        <search>
+          <progress>
+            <condition match="'job.resultCount' &gt; 0">
+              <set token="csg_panel_show">true</set>
+            </condition>
+            <condition>
+              <unset token="csg_panel_show"></unset>
+            </condition>
+          </progress>
+          <query>index="forcepoint" sourcetype="cloud-security-gateway"
+| head 1 
+| stats count 
+| where count = 1
+| eval app="Cloud Security Gateway" 
+| table app</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Converged cloud security to protect users and data</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/csg_summary</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$casb_panel_show$">
+      <html>
+      <style>
+        #trillsCenterCASB .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterCASB">
+        <search>
+          <progress>
+            <condition match="'job.resultCount' &gt; 0">
+              <set token="casb_panel_show">true</set>
+            </condition>
+            <condition>
+              <unset token="casb_panel_show"></unset>
+            </condition>
+          </progress>
+          <query>index="forcepoint" sourcetype="casb"
+| head 1 
+| stats count 
+| where count = 1
+| eval app="Cloud Access Security Broker" 
+| table app</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Complete cloud application security</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/casb_summary</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$ngfw_panel_show$">
+      <html>
+      <style>
+        #trillsCenterNGFW .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterNGFW">
+        <search>
+          <progress>
+            <condition match="'job.resultCount' &gt; 0">
+              <set token="ngfw_panel_show">true</set>
+            </condition>
+            <condition>
+              <unset token="ngfw_panel_show"></unset>
+            </condition>
+          </progress>
+          <query>index="forcepoint" sourcetype="next-generation-firewall"
+| head 1 
+| stats count 
+| where count = 1
+| eval app="Next Generation Firewall" 
+| table app</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Enterprise SD-WAN meets the #1 most secure next gen firewall</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/ngfw_summary</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+</dashboard>
