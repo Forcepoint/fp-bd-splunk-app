@@ -1,7 +1,7 @@
 <form refresh="3600">
   <label>System Health Traffic</label>
   <search id="base_search">
-    <query>index="forcepoint" sourcetype="next-generation-firewall" | table _time COMPID FACILITY SITUATION TYPE INFOMSG ALERT ALERTSEVERITY USERDOMAIN USERNAME PEERSECURITYGATEWAY SERVICE EVENT ACCRXBYTES ACCTXBYTES</query>
+    <query>index="forcepoint" sourcetype="next-generation-firewall" | table _time COMPID FACILITY SITUATION TYPE INFOMSG ALERT ALERTSEVERITY USERDOMAIN USERNAME PEERSECURITYGATEWAY SERVICE EVENT ACCRXBYTES ACCTXBYTES VPNID</query>
     <earliest>$time.earliest$</earliest>
     <latest>$time.latest$</latest>
   </search>
@@ -730,6 +730,41 @@
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">row</option>
         <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Blacklisting Logs</title>
+      <table>
+        <search base="base_search">
+          <query>| search FACILITY=Blacklisting | table _time COMPID FACILITY SITUATION TYPE INFOMSG EVENT</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>New connection through VPN</title>
+      <table>
+        <search base="base_search">
+          <query>| search SITUATION="FW_New-IPsec-VPN-Connection" | table _time COMPID FACILITY SITUATION TYPE INFOMSG EVENT PEERSECURITYGATEWAY VPNID</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">true</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>

@@ -49,7 +49,7 @@
       </style>
     </html>
       <single id="trillsCenterNodesHealth">
-        <title>Number of instances logging traffic daily trend</title>
+        <title>Number of instances logging traffic - 24 hours trend</title>
         <search>
           <query>index="forcepoint" sourcetype="next-generation-firewall" 
           | append [| makeresults] 
@@ -84,7 +84,7 @@
            ]]>
       </html>
       <single id="trillsCenterHealth">
-        <title>Bandwidth daily trend</title>
+        <title>Bandwidth - 24 hours trend</title>
         <search>
           <query>index="forcepoint" sourcetype="next-generation-firewall" | table _time ACCRXBYTES ACCTXBYTES
 | eval total_bytes = ACCRXBYTES + ACCTXBYTES 
@@ -131,7 +131,7 @@
       </style>
     </html>
       <single id="trillsCenterBlocked">
-        <title>Blocked connections daily trend</title>
+        <title>Blocked connections - 24 hours trend</title>
         <search>
           <query>index="forcepoint" sourcetype="next-generation-firewall" SITUATION=Connection_Refused | timechart span=1day count</query>
           <earliest>$time.earliest$</earliest>
