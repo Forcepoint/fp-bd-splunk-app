@@ -1,6 +1,54 @@
-<dashboard>
+<form refresh="1800">
   <label>Forcepoint</label>
   <description>Humans Are the New Perimeter</description>
+  <row>
+    <panel depends="$fp_panel_show$">
+      <html>
+      <style>
+        #trillsCenterFP .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterFP">
+        <search>
+          <progress>
+            <condition match="'job.resultCount' &gt; 0">
+              <set token="fp_panel_show">true</set>
+            </condition>
+            <condition>
+              <unset token="fp_panel_show"></unset>
+            </condition>
+          </progress>
+          <query>index="forcepoint" | head 1 
+| stats count 
+| where count = 0
+| eval app="There are no Forcepoint data available yet" 
+| table app</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x53a051"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+  </row>
   <row>
     <panel depends="$pa_panel_show$">
       <html>
@@ -52,6 +100,8 @@
         </drilldown>
       </single>
     </panel>
+  </row>
+  <row>
     <panel depends="$csg_panel_show$">
       <html>
       <style>
@@ -99,58 +149,6 @@
         <option name="useThousandSeparators">1</option>
         <drilldown>
           <link target="_blank">/app/forcepoint-solutions/csg_summary</link>
-        </drilldown>
-      </single>
-    </panel>
-  </row>
-  <row>
-    <panel depends="$casb_panel_show$">
-      <html>
-      <style>
-        #trillsCenterCASB .facets-container{
-        display: flex !important;
-        justify-content: center !important;
-        }
-      </style>
-    </html>
-      <single id="trillsCenterCASB">
-        <search>
-          <progress>
-            <condition match="'job.resultCount' &gt; 0">
-              <set token="casb_panel_show">true</set>
-            </condition>
-            <condition>
-              <unset token="casb_panel_show"></unset>
-            </condition>
-          </progress>
-          <query>index="forcepoint" sourcetype="casb"
-| head 1 
-| stats count 
-| where count = 1
-| eval app="Cloud Access Security Broker" 
-| table app</query>
-          <earliest>0</earliest>
-          <latest></latest>
-        </search>
-        <option name="colorBy">value</option>
-        <option name="colorMode">none</option>
-        <option name="drilldown">all</option>
-        <option name="numberPrecision">0</option>
-        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
-        <option name="rangeValues">[0]</option>
-        <option name="showSparkline">1</option>
-        <option name="showTrendIndicator">1</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-        <option name="trendColorInterpretation">standard</option>
-        <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">Complete cloud application security</option>
-        <option name="unitPosition">after</option>
-        <option name="useColors">0</option>
-        <option name="useThousandSeparators">1</option>
-        <drilldown>
-          <link target="_blank">/app/forcepoint-solutions/casb_summary</link>
         </drilldown>
       </single>
     </panel>
@@ -207,4 +205,56 @@
       </single>
     </panel>
   </row>
-</dashboard>
+  <row>
+    <panel depends="$casb_panel_show$">
+      <html>
+      <style>
+        #trillsCenterCASB .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+      </style>
+    </html>
+      <single id="trillsCenterCASB">
+        <search>
+          <progress>
+            <condition match="'job.resultCount' &gt; 0">
+              <set token="casb_panel_show">true</set>
+            </condition>
+            <condition>
+              <unset token="casb_panel_show"></unset>
+            </condition>
+          </progress>
+          <query>index="forcepoint" sourcetype="cloud-access-security-broker"
+| head 1 
+| stats count 
+| where count = 1
+| eval app="Cloud Access Security Broker" 
+| table app</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Complete cloud application security</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_blank">/app/forcepoint-solutions/casb_summary</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+</form>

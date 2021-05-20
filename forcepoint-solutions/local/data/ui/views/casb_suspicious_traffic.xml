@@ -1,12 +1,27 @@
 <form refresh="3600">
-  <label>Suspicious Traffic</label>
-  <search id="base_search_suspicious">
-    <query>index="forcepoint" sourcetype="next-generation-firewall" ACTION IN (Allow, Permit) ALERTSEVERITY IN (Critical, High) | table _time COMPID ADDITIONALSITUATION HTTPREQUESTHOST SRC DST SERVICE USERNAME ALERTSEVERITY SITUATION SITCATEGORY ANOMALYSITUATION FACILITY ACTION IPSAPPID</query>
-    <earliest>$time.earliest$</earliest>
-    <latest>$time.latest$</latest>
-  </search>
-  <search id="base_search_refused">
-    <query>index="forcepoint" sourcetype="next-generation-firewall" SITUATION=Connection_Refused | table _time COMPID ADDITIONALSITUATION HTTPREQUESTHOST SRC DST SERVICE USERNAME</query>
+  <label>CASB Suspicious Traffic</label>
+  <search id="base_search">
+    <query>index="forcepoint" sourcetype="cloud-access-security-broker" | table _time signature vendor_severity app act cat cs1 destinationServiceName msg sourceServiceName requestClientApplication deviceProcessName flexString1 suser duser 
+| rex field=requestClientApplication "(?&lt;EndpointType&gt;[^\/]+)\/(?&lt;EndpointOS&gt;[^\/]+)\/(?&lt;UserAgent&gt;.*)" 
+| rename signature as "Event"
+| rename act as "Mitigation Action" 
+| rename cat as "State" 
+| rename cs1 as "Incident Name" 
+| rename destinationServiceName as "Asset" 
+| rename msg as "Message"
+| eval "Severity"=vendor_severity
+| replace 6 WITH Info IN "Severity" 
+| replace 7 WITH Low IN "Severity" 
+| replace 8 WITH Medium IN "Severity" 
+| replace 9 WITH High IN "Severity" 
+| replace 10 WITH Critical IN "Severity"
+| rename sourceServiceName as "Managed" 
+| rename deviceProcessName as "Data Object" 
+| rename app as "Service Type"
+| rename flexString1 as "Record" 
+| rename suser as "Account" 
+| rename duser as "Target Account" 
+</query>
     <earliest>$time.earliest$</earliest>
     <latest>$time.latest$</latest>
   </search>
@@ -38,8 +53,8 @@
         }
        </style>
       <div align="right">
-       <br />
-       <a class="home_btn" role="button" href="/app/forcepoint-solutions/ngfw_summary">NGFW Home Dashboard</a>
+       <br/>
+       <a class="home_btn" role="button" href="/app/forcepoint-solutions/casb_summary">CASB Home Dashboard</a>
        </div>
     </html>
     <input type="time" token="time" searchWhenChanged="true">
@@ -51,20 +66,20 @@
     </input>
     <input type="link" token="unused" id="resized_input">
       <label>Choose a view</label>
-      <choice value="single">Info</choice>
+      <choice value="info">Info</choice>
       <choice value="both">Details</choice>
       <default>Info</default>
       <change>
-        <condition value="single">
-          <set token="showSingle">true</set>
+        <condition value="info">
+          <set token="showInfo">true</set>
           <unset token="showTable"></unset>
         </condition>
         <condition value="table">
           <set token="showTable">true</set>
-          <unset token="showSingle"></unset>
+          <unset token="showInfo"></unset>
         </condition>
         <condition value="both">
-          <set token="showSingle">true</set>
+          <set token="showInfo">true</set>
           <set token="showTable">true</set>
         </condition>
       </change>
@@ -95,39 +110,9 @@
   </row>
   <row>
     <panel>
-      <single>
-        <search base="base_search_refused">
-          <query>| timechart span=1w count 
-| rename count as "Blocked Connections"</query>
-        </search>
-        <option name="colorBy">value</option>
-        <option name="colorMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="numberPrecision">0</option>
-        <option name="rangeColors">["0x006d9c","0xdc4e41"]</option>
-        <option name="rangeValues">[100000000000000000]</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="showSparkline">1</option>
-        <option name="showTrendIndicator">1</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-        <option name="trendColorInterpretation">standard</option>
-        <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">Blocked Connections - Weekly Trend</option>
-        <option name="unitPosition">after</option>
-        <option name="useColors">1</option>
-        <option name="useThousandSeparators">0</option>
-      </single>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <single depends="$showSingle$">
-        <search base="base_search_refused">
-          <query>| stats count by ADDITIONALSITUATION 
-| stats count
-| rename count as "Blocked Web Categories"</query>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| search vendor_severity = 10 | stats count</query>
         </search>
         <option name="colorBy">value</option>
         <option name="colorMode">none</option>
@@ -143,7 +128,7 @@
         <option name="trellis.size">medium</option>
         <option name="trendColorInterpretation">standard</option>
         <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">Blocked Categories</option>
+        <option name="underLabel">Critical Severity Events</option>
         <option name="unitPosition">after</option>
         <option name="useColors">0</option>
         <option name="useThousandSeparators">0</option>
@@ -151,35 +136,25 @@
     </panel>
     <panel>
       <table depends="$showTable$">
-        <title>The number of times each category was matched to block a request</title>
-        <search base="base_search_refused">
-          <query>| search ADDITIONALSITUATION=* 
-| chart count sparkline(count, 1w) as "weekly trend" by ADDITIONALSITUATION 
-| sort -count 
-| rename count as "Blocked Connections Count" 
-| rename ADDITIONALSITUATION as "Category"</query>
+        <search base="base_search">
+          <query>| search vendor_severity = 10 
+  | table _time "Event" "Mitigation Action" "Account" "Target Account" "State" "Asset" "EndpointType" "Managed" "EndpointOS" "Data Object" "Message" "Record"</query>
         </search>
         <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
         <option name="drilldown">row</option>
-        <option name="refresh.display">progressbar</option>
+        <option name="percentagesRow">false</option>
         <option name="rowNumbers">true</option>
-        <format field="weekly trend" type="sparkline">
-          <option name="type">bar</option>
-          <option name="height">40</option>
-          <option name="barColor">#5379AF</option>
-          <option name="barWidth">5px</option>
-        </format>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
       </table>
     </panel>
   </row>
   <row>
     <panel>
-      <single depends="$showSingle$">
-        <search base="base_search_refused">
-          <query>| replace "www.*" with * in HTTPREQUESTHOST 
-| stats count by HTTPREQUESTHOST 
-| stats count 
-| rename count as "Blocked URL Domains"</query>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| search vendor_severity = 9 | stats count</query>
         </search>
         <option name="colorBy">value</option>
         <option name="colorMode">none</option>
@@ -195,7 +170,7 @@
         <option name="trellis.size">medium</option>
         <option name="trendColorInterpretation">standard</option>
         <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">Blocked Domain Names</option>
+        <option name="underLabel">High Severity Events</option>
         <option name="unitPosition">after</option>
         <option name="useColors">0</option>
         <option name="useThousandSeparators">0</option>
@@ -203,181 +178,25 @@
     </panel>
     <panel>
       <table depends="$showTable$">
-        <title>The number of blocked web requests by destination domain name</title>
-        <search base="base_search_refused">
-          <query>| search HTTPREQUESTHOST=* 
-| replace "www.*" with * in HTTPREQUESTHOST 
-| chart count sparkline(count, 1w) as "weekly trend" by HTTPREQUESTHOST 
-| sort -count 
-| rename count as "Blocked Connections Count" 
-| rename HTTPREQUESTHOST as "Domain Name"</query>
+        <search base="base_search">
+          <query>| search vendor_severity = 9 
+  | table _time "Event" "Mitigation Action" "Account" "Target Account" "State" "Asset" "EndpointType" "Managed" "EndpointOS" "Data Object" "Message" "Record"</query>
         </search>
         <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
         <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
         <option name="rowNumbers">true</option>
-        <format type="sparkline" field="weekly trend">
-          <option name="type">bar</option>
-          <option name="height">40</option>
-          <option name="barColor">#5379AF</option>
-          <option name="barWidth">5px</option>
-        </format>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
       </table>
     </panel>
   </row>
   <row>
     <panel>
-      <single depends="$showSingle$">
-        <search base="base_search_refused">
-          <query>| stats count by SRC 
-| stats count
-| rename count as "Blocked Sources"</query>
-        </search>
-        <option name="colorBy">value</option>
-        <option name="colorMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="numberPrecision">0</option>
-        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
-        <option name="rangeValues">[0,30,70,100]</option>
-        <option name="showSparkline">1</option>
-        <option name="showTrendIndicator">1</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-        <option name="trendColorInterpretation">standard</option>
-        <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">Blocked Sources</option>
-        <option name="unitPosition">after</option>
-        <option name="useColors">0</option>
-        <option name="useThousandSeparators">0</option>
-      </single>
-    </panel>
-    <panel>
-      <table depends="$showTable$">
-        <title>The number of blocked requests per source address</title>
-        <search base="base_search_refused">
-          <query>| search SRC=* | eval full_src = COMPID + " - " + if(isnotnull(SRC), SRC , "No src")
-| chart count sparkline(count, 1w) as "weekly trend" by full_src 
-| sort count 
-| rename count as "Blocked Connections Count" 
-| rename full_src as Source</query>
-        </search>
-        <option name="count">7</option>
-        <option name="drilldown">row</option>
-        <option name="rowNumbers">true</option>
-        <format type="sparkline" field="weekly trend">
-          <option name="type">bar</option>
-          <option name="height">40</option>
-          <option name="barColor">#5379AF</option>
-          <option name="barWidth">5px</option>
-        </format>
-      </table>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <single depends="$showSingle$">
-        <search base="base_search_refused">
-          <query>| stats count by DST 
-| stats count
-| rename count as "Blocked Destination IP Addresses"</query>
-        </search>
-        <option name="colorBy">value</option>
-        <option name="colorMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="numberPrecision">0</option>
-        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
-        <option name="rangeValues">[0,30,70,100]</option>
-        <option name="showSparkline">1</option>
-        <option name="showTrendIndicator">1</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-        <option name="trendColorInterpretation">standard</option>
-        <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">Blocked Destination IP Addresses</option>
-        <option name="unitPosition">after</option>
-        <option name="useColors">0</option>
-        <option name="useThousandSeparators">0</option>
-      </single>
-    </panel>
-    <panel>
-      <table depends="$showTable$">
-        <title>The number of blocked requests to destination addresses by destination IP address</title>
-        <search base="base_search_refused">
-          <query>| search DST=* 
-| chart count sparkline(count, 1w) as "weekly trend" by DST 
-| sort -count 
-| rename count as "Blocked Connections Count" 
-| rename DST as Destination</query>
-        </search>
-        <option name="count">7</option>
-        <option name="drilldown">row</option>
-        <option name="rowNumbers">true</option>
-        <format type="sparkline" field="weekly trend">
-          <option name="type">bar</option>
-          <option name="height">40</option>
-          <option name="barColor">#5379AF</option>
-          <option name="barWidth">5px</option>
-        </format>
-      </table>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <single depends="$showSingle$">
-        <search base="base_search_refused">
-          <query>| stats count by SERVICE 
-| stats count
-| rename count as "Blocked Services"</query>
-        </search>
-        <option name="colorBy">value</option>
-        <option name="colorMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="numberPrecision">0</option>
-        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
-        <option name="rangeValues">[0,30,70,100]</option>
-        <option name="showSparkline">1</option>
-        <option name="showTrendIndicator">1</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-        <option name="trendColorInterpretation">standard</option>
-        <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">Blocked Services</option>
-        <option name="unitPosition">after</option>
-        <option name="useColors">0</option>
-        <option name="useThousandSeparators">0</option>
-      </single>
-    </panel>
-    <panel>
-      <table depends="$showTable$">
-        <title>The number of times each service was matched to block a transaction</title>
-        <search base="base_search_refused">
-          <query>| search SERVICE=* 
-| chart count sparkline(count, 1w) as "weekly trend" by SERVICE 
-| sort -count 
-| rename count as "Blocked Connections Count" 
-| rename SERVICE as Service</query>
-        </search>
-        <option name="count">7</option>
-        <option name="drilldown">row</option>
-        <option name="rowNumbers">true</option>
-        <format type="sparkline" field="weekly trend">
-          <option name="type">bar</option>
-          <option name="height">40</option>
-          <option name="barColor">#5379AF</option>
-          <option name="barWidth">5px</option>
-        </format>
-      </table>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <single depends="$showSingle$">
-        <search base="base_search_refused">
-          <query>| stats count by USERNAME COMPID
-| stats count
-| rename count as "Blocked Users"</query>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| search vendor_severity = 8 | stats count</query>
         </search>
         <option name="colorBy">value</option>
         <option name="colorMode">none</option>
@@ -393,7 +212,7 @@
         <option name="trellis.size">medium</option>
         <option name="trendColorInterpretation">standard</option>
         <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">Blocked Users</option>
+        <option name="underLabel">Medium Severity Events</option>
         <option name="unitPosition">after</option>
         <option name="useColors">0</option>
         <option name="useThousandSeparators">0</option>
@@ -401,32 +220,25 @@
     </panel>
     <panel>
       <table depends="$showTable$">
-        <title>The number of times each user was matched to block a transaction</title>
-        <search base="base_search_refused">
-          <query>| search USERNAME=* 
-| stats count by USERNAME COMPID
-| sort -count 
-| rename count as "Blocked Connections Count" 
-| rename USERNAME as Username</query>
+        <search base="base_search">
+          <query>| search vendor_severity = 8 
+  | table _time "Event" "Mitigation Action" "Account" "Target Account" "State" "Asset" "EndpointType" "Managed" "EndpointOS" "Data Object" "Message" "Record"</query>
         </search>
         <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
         <option name="drilldown">row</option>
-        <option name="refresh.display">progressbar</option>
+        <option name="percentagesRow">false</option>
         <option name="rowNumbers">true</option>
-        <format field="weekly trend" type="sparkline">
-          <option name="type">bar</option>
-          <option name="height">40</option>
-          <option name="barColor">#5379AF</option>
-          <option name="barWidth">5px</option>
-        </format>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
       </table>
     </panel>
   </row>
   <row>
     <panel>
-      <single depends="$showSingle$">
-        <search base="base_search_suspicious">
-          <query>| stats count | rename count as "Suspicious Connections"</query>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| search Event = "Alert" | stats count</query>
         </search>
         <option name="colorBy">value</option>
         <option name="colorMode">none</option>
@@ -442,7 +254,7 @@
         <option name="trellis.size">medium</option>
         <option name="trendColorInterpretation">standard</option>
         <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">Suspicious Connections</option>
+        <option name="underLabel">Alert Events</option>
         <option name="unitPosition">after</option>
         <option name="useColors">0</option>
         <option name="useThousandSeparators">0</option>
@@ -450,17 +262,145 @@
     </panel>
     <panel>
       <table depends="$showTable$">
-        <title>Connections that have Critical or High severity detected by they were allowed based on the firewall policy</title>
-        <search base="base_search_suspicious"></search>
+        <search base="base_search">
+          <query>| search Event="Alert" 
+| table _time "Mitigation Action" "State" "Severity" "Asset" "EndpointType" "Managed" "EndpointOS" "Data Object" "Message"</query>
+        </search>
         <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
         <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">true</option>
-        <format field="weekly trend" type="sparkline">
-          <option name="type">bar</option>
-          <option name="height">40</option>
-          <option name="barColor">#5379AF</option>
-          <option name="barWidth">5px</option>
-        </format>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| search Event = "Incident" | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Incident Events</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+    <panel>
+      <table depends="$showTable$">
+        <search base="base_search">
+          <query>| search Event="Incident" 
+| table _time "Mitigation Action" "State" "Incident Name" "Asset" "Message"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| rename "Mitigation Action" as Action | eval Action=lower(Action) | search Action = "block" | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Blocked Connections</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">0</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Blocked Connections - Policy Enforcement</title>
+      <table depends="$showTable$">
+        <search base="base_search">
+          <query>| rename "Mitigation Action" as Action 
+| eval Action=lower(Action) 
+| search Action = "block" 
+| stats count by "State"
+| rename "State" as "Rule Name/Policy Name"
+| sort -count</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Blocked Applications Protocol Count</title>
+      <table depends="$showTable$">
+        <search base="base_search">
+          <query>| rename "Mitigation Action" as Action | eval Action=lower(Action) | search Action = "block" | stats count by "Service Type" | sort -count</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Blocked Connections Details</title>
+      <table depends="$showTable$">
+        <search base="base_search">
+          <query>| rename "Mitigation Action" as Action | eval Action=lower(Action) | search Action = "block"
+| table _time "Event" "State" "Asset" "EndpointType" "Managed" "EndpointOS" "Data Object" "Message" "Incident Name"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
       </table>
     </panel>
   </row>

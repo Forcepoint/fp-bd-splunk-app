@@ -1,14 +1,31 @@
-<form>
-  <label>Web Activity Dashboard</label>
-  <search id="base_web_search">
-    <query>index="forcepoint" sourcetype="cloud-security-gateway" "Connection IP"=* | table _time "Connection Name" "Bytes Sent" "Bytes Received" User Domain "User Agent" "Operating System" "Category Name" "Cloud App Category" "Cloud App Name" </query>
+<form refresh="3600">
+  <label>CASB Traffic</label>
+  <search id="base_search">
+    <query>index="forcepoint" sourcetype="cloud-access-security-broker" | table _time signature vendor_severity app act cat cs1 destinationServiceName msg sourceServiceName requestClientApplication deviceProcessName flexString1 suser duser 
+| rex field=requestClientApplication "(?&lt;EndpointType&gt;[^\/]+)\/(?&lt;EndpointOS&gt;[^\/]+)\/(?&lt;UserAgent&gt;.*)" 
+| rename signature as "Event"
+| rename act as "Mitigation Action" 
+| rename cat as "State" 
+| rename cs1 as "Incident Name" 
+| rename destinationServiceName as "Asset" 
+| rename msg as "Message"
+| eval "Severity"=vendor_severity
+| replace 6 WITH Info IN "Severity" 
+| replace 7 WITH Low IN "Severity" 
+| replace 8 WITH Medium IN "Severity" 
+| replace 9 WITH High IN "Severity" 
+| replace 10 WITH Critical IN "Severity"
+| rename sourceServiceName as "Managed" 
+| rename deviceProcessName as "Data Object" 
+| rename app as "Service Type"
+| rename flexString1 as "Record" 
+| rename suser as "Account" 
+| rename duser as "Target Account" 
+</query>
     <earliest>$time.earliest$</earliest>
     <latest>$time.latest$</latest>
   </search>
-  <search id="driven_search" base="base_web_search">
-    <query>| search User=$user_token$ "Connection Name"=$connection_name_token$</query>
-  </search>
-  <fieldset submitButton="true" autoRun="true">
+  <fieldset submitButton="false" autoRun="true">
     <html>
       <style>
           a.home_btn {
@@ -36,143 +53,87 @@
         }
        </style>
       <div align="right">
-       <br />
-       <a class="home_btn" role="button" href="/app/forcepoint-solutions/csg_summary">CSG Home Dashboard</a>
+       <br/>
+       <a class="home_btn" role="button" href="/app/forcepoint-solutions/casb_summary">CASB Home Dashboard</a>
        </div>
     </html>
-    <input type="time" token="time" searchWhenChanged="false">
+    <input type="time" token="time" searchWhenChanged="true">
       <label>Time Picker</label>
       <default>
-        <earliest>@w0</earliest>
+        <earliest>@mon</earliest>
         <latest>now</latest>
       </default>
     </input>
-    <input type="dropdown" token="connection_name_token" searchWhenChanged="false">
-      <label>Connection Name</label>
-      <choice value="*">All</choice>
-      <default>*</default>
-      <initialValue>*</initialValue>·<fieldForLabel>Connection Name</fieldForLabel>
-      <fieldForValue>Connection Name</fieldForValue>
-      <search base="base_web_search">
-        <query>| stats count by "Connection Name" | sort -count </query>
-      </search>
-    </input>
-    <input type="dropdown" token="user_token" searchWhenChanged="false">
-      <label>User</label>
-      <choice value="*">All</choice>
-      <default>*</default>
-      <initialValue>*</initialValue>·<fieldForLabel>User</fieldForLabel>
-      <fieldForValue>User</fieldForValue>
-      <search base="base_web_search">
-        <query>| search User!="Not available" | stats count by User | sort -count </query>
-      </search>
+    <input type="link" token="unused" id="resized_input">
+      <label>Choose a view</label>
+      <choice value="info">Info</choice>
+      <choice value="both">Details</choice>
+      <default>Info</default>
+      <change>
+        <condition value="info">
+          <set token="showInfo">true</set>
+          <unset token="showTable"></unset>
+        </condition>
+        <condition value="table">
+          <set token="showTable">true</set>
+          <unset token="showInfo"></unset>
+        </condition>
+        <condition value="both">
+          <set token="showInfo">true</set>
+          <set token="showTable">true</set>
+        </condition>
+      </change>
     </input>
   </fieldset>
-  <row>
+  <row depends="$alwaysHideCSSPanel$">
     <panel>
       <html>
         <style>
-          #trillsCenterWebBandwidth .facets-container{
-          display: flex !important;
-          justify-content: center !important;
+          #resized_input {
+            width: 300px;
+          }
+          .dashboard-panel h2{
+            text-align: center !important;
+            font-weight: bold !important;
+          }
+          #chartWithHiddenDataLabels .highcharts-series-1 .highcharts-data-label text tspan 
+          {
+            visibility:hidden !important;
+          }
+          #chartWithHiddenDataLabels .highcharts-series-2 .highcharts-data-label text tspan 
+          {
+            visibility:hidden !important;
           }
         </style>
       </html>
-      <single id="trillsCenterWebBandwidth">
-        <title>Bandwidth - Trend by day</title>
-        <search base="driven_search">
-          <query>| rename "Bytes Sent" as bs 
-| rename "Bytes Received" as br 
-| eval bs = replace(bs,"None", "0") 
-| eval br = replace(br,"None", "0") 
-| eval bs_mb=round((bs)/1000000,1) 
-| eval br_mb=round((br)/1000000,1)
-| timechart span=1day sum(bs_mb) as Sent, sum(br_mb) as Received</query>
-        </search>
-        <option name="colorBy">value</option>
-        <option name="colorMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="height">340</option>
-        <option name="numberPrecision">0</option>
-        <option name="rangeColors">["0x53a051","0x53a051"]</option>
-        <option name="rangeValues">[0]</option>
-        <option name="showSparkline">1</option>
-        <option name="showTrendIndicator">1</option>
-        <option name="trellis.enabled">1</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-        <option name="trendColorInterpretation">standard</option>
-        <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">MB</option>
-        <option name="unitPosition">after</option>
-        <option name="useColors">1</option>
-        <option name="useThousandSeparators">1</option>
-      </single>
     </panel>
   </row>
   <row>
     <panel>
-      <table>
-        <title>Bandwidth in MB by user</title>
-        <search base="driven_search">
-          <query>| search User!="Not available"
-| stats sum("Bytes Sent") as Sent_b, sum("Bytes Received") as Received_b by User | eval Sent=round((Sent_b)/1000000,3) 
-| eval Received=round((Received_b)/1000000,3) | fields - Sent_b Received_b | sort - Received</query>
-        </search>
-        <option name="count">7</option>
-        <option name="drilldown">row</option>
-        <option name="rowNumbers">true</option>
-      </table>
-    </panel>
-    <panel>
-      <table>
-        <title>Bandwidth in MB by domain</title>
-        <search base="driven_search">
-          <query>| search User!="Not available"
-| stats sum("Bytes Sent") as Sent_b, sum("Bytes Received") as Received_b by Domain | eval Sent=round((Sent_b)/1000000,3) 
-| eval Received=round((Received_b)/1000000,3) | fields - Sent_b Received_b | sort - Received</query>
-        </search>
-        <option name="count">7</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">row</option>
-        <option name="percentagesRow">false</option>
-        <option name="rowNumbers">true</option>
-        <option name="totalsRow">false</option>
-        <option name="wrap">true</option>
-      </table>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <chart>
-        <title>Bandwidth time chart</title>
-        <search base="driven_search">
-          <query>| rename "Bytes Sent" as bs 
-| rename "Bytes Received" as br 
-| eval bs = replace(bs,"None", "0") 
-| eval br = replace(br,"None", "0") | eval total_bytes = bs + br 
-| eval total_mb=round((total_bytes)/1000000,1) 
-| timechart span=1h sum(total_mb) as Bandwidth</query>
+      <title>Overall Event Types</title>
+      <chart depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats count by Event</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
         <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.text">Megabytes</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisTitleY2.visibility">visible</option>
         <option name="charting.axisX.abbreviation">none</option>
         <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.abbreviation">auto</option>
+        <option name="charting.axisY.abbreviation">none</option>
         <option name="charting.axisY.scale">linear</option>
         <option name="charting.axisY2.abbreviation">none</option>
         <option name="charting.axisY2.enabled">0</option>
         <option name="charting.axisY2.scale">inherit</option>
-        <option name="charting.chart">area</option>
+        <option name="charting.chart">pie</option>
         <option name="charting.chart.bubbleMaximumSize">50</option>
         <option name="charting.chart.bubbleMinimumSize">10</option>
         <option name="charting.chart.bubbleSizeBy">area</option>
-        <option name="charting.chart.nullValueMode">zero</option>
-        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.showPercent">1</option>
         <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
@@ -183,62 +144,181 @@
         <option name="charting.legend.mode">standard</option>
         <option name="charting.legend.placement">right</option>
         <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Overall Mitigation Action Applied</title>
+      <chart depends="$showInfo$">
+        <search base="base_search">
+          <query>| rename "Mitigation Action" as action | eval action=lower(action) | stats count by action</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.showPercent">1</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Events</title>
+      <table depends="$showTable$">
+        <search base="base_search">
+          <query>| table _time "Event" "Mitigation Action" "State" "Asset" "EndpointType" "Managed" "EndpointOS" "Data Object" "Message" "Incident Name"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Overall Severity Count</title>
+      <chart depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats count by "Severity"
+          </query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.showPercent">1</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Severity Event Details</title>
+      <table depends="$showTable$">
+        <search base="base_search">
+          <query>| sort -vendor_severity 
+| table _time "Severity" "Event" "Mitigation Action" "Account" "Target Account" "State" "Asset" "EndpointType" "Managed" "EndpointOS" "Data Object" "Message" "Record"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Top 10 Application Applications Used</title>
+      <chart depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats count by "Service Type" | sort -count | head 10</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">bar</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.001</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">1</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.lineWidth">2</option>
         <option name="refresh.display">progressbar</option>
         <option name="trellis.enabled">0</option>
         <option name="trellis.scales.shared">1</option>
         <option name="trellis.size">medium</option>
       </chart>
     </panel>
-  </row>
-  <row>
     <panel>
-      <chart>
-        <title>Top 10 web category traffic</title>
-        <search base="driven_search">
-          <query>| search "Category Name"!=Unknown | stats count by "Category Name" | sort - count | rename count as Hits | head 10</query>
-        </search>
-        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
-        <option name="charting.axisX.abbreviation">none</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.abbreviation">auto</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.axisY2.abbreviation">none</option>
-        <option name="charting.axisY2.enabled">0</option>
-        <option name="charting.axisY2.scale">inherit</option>
-        <option name="charting.chart">bar</option>
-        <option name="charting.chart.bubbleMaximumSize">50</option>
-        <option name="charting.chart.bubbleMinimumSize">10</option>
-        <option name="charting.chart.bubbleSizeBy">area</option>
-        <option name="charting.chart.nullValueMode">gaps</option>
-        <option name="charting.chart.showDataLabels">all</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">default</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">none</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.mode">standard</option>
-        <option name="charting.legend.placement">none</option>
-        <option name="charting.lineWidth">2</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-      </chart>
-    </panel>
-    <panel>
-      <table>
-        <title>Web traffic</title>
-        <search base="driven_search">
-          <query> | stats count by "Category Name" "Domain" | sort - count</query>
+      <title>Applications Used</title>
+      <table depends="$showTable$">
+        <search base="base_search">
+          <query>| stats count by "Service Type" | sort -count</query>
         </search>
         <option name="count">7</option>
         <option name="dataOverlayMode">none</option>
-        <option name="drilldown">none</option>
+        <option name="drilldown">row</option>
         <option name="percentagesRow">false</option>
         <option name="rowNumbers">true</option>
         <option name="totalsRow">false</option>
@@ -248,15 +328,17 @@
   </row>
   <row>
     <panel>
-      <chart>
-        <title>Top 10 cloud app category traffic</title>
-        <search base="driven_search">
-          <query>| search "Cloud App Category"!=None | stats count by "Cloud App Category" | sort - count | rename count as Hits | head 10</query>
+      <title>Top 10 Policy Enforcement</title>
+      <chart depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats count by "State" 
+| sort -count 
+| head 10</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
         <option name="charting.axisTitleY2.visibility">visible</option>
         <option name="charting.axisX.abbreviation">none</option>
         <option name="charting.axisX.scale">linear</option>
@@ -271,7 +353,7 @@
         <option name="charting.chart.bubbleSizeBy">area</option>
         <option name="charting.chart.nullValueMode">gaps</option>
         <option name="charting.chart.showDataLabels">all</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.0001</option>
         <option name="charting.chart.stackMode">default</option>
         <option name="charting.chart.style">shiny</option>
         <option name="charting.drilldown">none</option>
@@ -281,105 +363,26 @@
         <option name="charting.legend.mode">standard</option>
         <option name="charting.legend.placement">none</option>
         <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
         <option name="trellis.enabled">0</option>
         <option name="trellis.scales.shared">1</option>
         <option name="trellis.size">medium</option>
       </chart>
     </panel>
     <panel>
-      <table>
-        <title>Cloud app traffic</title>
-        <search base="driven_search">
-          <query>| search "Cloud App Name"!=None | stats count by "Cloud App Name" "Cloud App Category" | sort - count</query>
+      <title>Policy Enforcement</title>
+      <table depends="$showTable$">
+        <search base="base_search">
+          <query>| stats count by "State" | rename "State" as "Rule Name/Policy Name" | sort -count</query>
         </search>
         <option name="count">7</option>
         <option name="dataOverlayMode">none</option>
-        <option name="drilldown">none</option>
+        <option name="drilldown">row</option>
         <option name="percentagesRow">false</option>
         <option name="rowNumbers">true</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>
       </table>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <chart>
-        <title>Top 10 operating systems</title>
-        <search base="driven_search">
-          <query> | stats count by "Operating System" | sort - count | rename count as Hits | head 10</query>
-        </search>
-        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
-        <option name="charting.axisX.abbreviation">none</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.abbreviation">auto</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.axisY2.abbreviation">none</option>
-        <option name="charting.axisY2.enabled">0</option>
-        <option name="charting.axisY2.scale">inherit</option>
-        <option name="charting.chart">bar</option>
-        <option name="charting.chart.bubbleMaximumSize">50</option>
-        <option name="charting.chart.bubbleMinimumSize">10</option>
-        <option name="charting.chart.bubbleSizeBy">area</option>
-        <option name="charting.chart.nullValueMode">gaps</option>
-        <option name="charting.chart.showDataLabels">all</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">default</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">none</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.mode">standard</option>
-        <option name="charting.legend.placement">none</option>
-        <option name="charting.lineWidth">2</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-      </chart>
-    </panel>
-    <panel>
-      <chart>
-        <title>Top 10 user agents</title>
-        <search base="driven_search">
-          <query> | stats count by "User Agent" | sort - count | rename count as Hits | head 10</query>
-        </search>
-        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
-        <option name="charting.axisX.abbreviation">none</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.abbreviation">auto</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.axisY2.abbreviation">none</option>
-        <option name="charting.axisY2.enabled">0</option>
-        <option name="charting.axisY2.scale">inherit</option>
-        <option name="charting.chart">bar</option>
-        <option name="charting.chart.bubbleMaximumSize">50</option>
-        <option name="charting.chart.bubbleMinimumSize">10</option>
-        <option name="charting.chart.bubbleSizeBy">area</option>
-        <option name="charting.chart.nullValueMode">gaps</option>
-        <option name="charting.chart.showDataLabels">all</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">default</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">none</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.mode">standard</option>
-        <option name="charting.legend.placement">none</option>
-        <option name="charting.lineWidth">2</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-      </chart>
     </panel>
   </row>
 </form>

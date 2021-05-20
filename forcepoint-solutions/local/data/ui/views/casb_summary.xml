@@ -1,5 +1,5 @@
 <form refresh="3600">
-  <label>Next Generation Firewall Traffic Summary</label>
+  <label>Cloud Access Security Broker Traffic Summary</label>
   <fieldset submitButton="false" autoRun="true">
     <input type="time" token="time" searchWhenChanged="true">
       <label>Time Picker</label>
@@ -27,7 +27,7 @@
           }
           #chartWithHiddenDataLabels .highcharts-series-2 .highcharts-data-label text tspan 
           {
-            visibility:hidden !important;
+            visibility:hidden !important;insights
           }
         </style>
       </html>
@@ -35,25 +35,29 @@
   </row>
   <row>
     <panel>
-      <title>System Health Dashboard</title>
+      <title>Traffic Dashboard</title>
       <html>
       <style>
-        #trillsCenterHealth .facets-container{
+        #trillsCenterIncident .facets-container{
         display: flex !important;
         justify-content: center !important;
         }
-        #trillsCenterNodesHealth .facets-container{
+        #trillsCenterAlert .facets-container{
+        display: flex !important;
+        justify-content: center !important;
+        }
+        #trillsCenterActivity .facets-container{
         display: flex !important;
         justify-content: center !important;
         }
       </style>
     </html>
-      <single id="trillsCenterNodesHealth">
-        <title>Number of instances logging traffic - 24 hours trend</title>
+      <single id="trillsCenterActivity">
         <search>
-          <query>index="forcepoint" sourcetype="next-generation-firewall" 
-          | append [| makeresults] 
-          | timechart span=1day dc(COMPID)</query>
+          <query>index="forcepoint" sourcetype="cloud-access-security-broker" signature="Activity" 
+| append 
+    [| makeresults] 
+| timechart span=1day count(signature)</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
         </search>
@@ -71,55 +75,79 @@
         <option name="trellis.size">small</option>
         <option name="trendColorInterpretation">standard</option>
         <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Activity daily trend</option>
         <option name="unitPosition">after</option>
-        <option name="useColors">1</option>
+        <option name="useColors">0</option>
         <option name="useThousandSeparators">1</option>
         <drilldown>
-          <link>/app/forcepoint-solutions/ngfw_health</link>
+          <link>/app/forcepoint-solutions/casb_traffic</link>
         </drilldown>
       </single>
-      <html tokens="true" encoded="true">
-       <![CDATA[
-           <br/>
-           ]]>
-      </html>
-      <single id="trillsCenterHealth">
-        <title>Bandwidth - 24 hours trend</title>
+      <single id="trillsCenterIncident">
         <search>
-          <query>index="forcepoint" sourcetype="next-generation-firewall" | table _time ACCRXBYTES ACCTXBYTES
-| eval total_bytes = ACCRXBYTES + ACCTXBYTES 
-| eval acc_rx_mb=round((ACCRXBYTES)/1000000,1) 
-| eval acc_tx_mb=round((ACCTXBYTES)/1000000,1) 
-| eval total_mb=round((total_bytes)/1000000,1) 
-| timechart span=1day sum(acc_rx_mb) as "Inbound Traffic", sum(acc_tx_mb) as "Outbound Traffic", sum(total_mb) as "Total Traffic"
-          </query>
+          <query>index="forcepoint" sourcetype="cloud-access-security-broker" signature="Incident" 
+| append 
+    [| makeresults] 
+| timechart span=1day count(signature)</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
         </search>
-        <option name="colorBy">value</option>
+        <option name="colorBy">trend</option>
         <option name="colorMode">none</option>
         <option name="drilldown">all</option>
-        <option name="height">254</option>
-        <option name="numberPrecision">0.0</option>
+        <option name="numberPrecision">0</option>
         <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
-        <option name="rangeValues">[1e+26]</option>
+        <option name="rangeValues">[0]</option>
         <option name="refresh.display">progressbar</option>
         <option name="showSparkline">1</option>
         <option name="showTrendIndicator">1</option>
-        <option name="trellis.enabled">1</option>
+        <option name="trellis.enabled">0</option>
         <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-        <option name="trendColorInterpretation">standard</option>
+        <option name="trellis.size">small</option>
+        <option name="trendColorInterpretation">inverse</option>
         <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">MB</option>
+        <option name="underLabel">Incident daily trend</option>
         <option name="unitPosition">after</option>
         <option name="useColors">1</option>
         <option name="useThousandSeparators">1</option>
         <drilldown>
-          <link>/app/forcepoint-solutions/ngfw_health</link>
+          <link>/app/forcepoint-solutions/casb_traffic</link>
+        </drilldown>
+      </single>
+      <single id="trillsCenterAlert">
+        <search>
+          <query>index="forcepoint" sourcetype="cloud-access-security-broker" signature="Alert" 
+| append 
+    [| makeresults] 
+| timechart span=1day count(signature)</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="colorBy">trend</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">small</option>
+        <option name="trendColorInterpretation">inverse</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Alert daily trend</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link>/app/forcepoint-solutions/casb_traffic</link>
         </drilldown>
       </single>
     </panel>
+  </row>
+  <row>
     <panel id="chartWithHiddenDataLabels">
       <title>Suspicious Traffic Dashboard</title>
       <html>
@@ -131,9 +159,8 @@
       </style>
     </html>
       <single id="trillsCenterBlocked">
-        <title>Blocked connections - 24 hours trend</title>
         <search>
-          <query>index="forcepoint" sourcetype="next-generation-firewall" SITUATION=Connection_Refused | timechart span=1day count</query>
+          <query>index="forcepoint" sourcetype="cloud-access-security-broker" | eval action=lower(act) | search action="block" | timechart span=1day count</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
         </search>
@@ -151,80 +178,21 @@
         <option name="trellis.size">medium</option>
         <option name="trendColorInterpretation">standard</option>
         <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">Blocked Connections</option>
+        <option name="underLabel">Blocked connections daily trend</option>
         <option name="unitPosition">after</option>
         <option name="useColors">1</option>
         <option name="useThousandSeparators">0</option>
         <drilldown>
-          <link>/app/forcepoint-solutions/ngfw_suspicious_traffic</link>
+          <link>/app/forcepoint-solutions/casb_suspicious_traffic</link>
         </drilldown>
       </single>
-      <chart>
-        <title>Blocked and allowed connections trend</title>
-        <search>
-          <query>index="forcepoint" sourcetype="next-generation-firewall" | timechart span=1day count(eval(SITUATION="Connection_Allowed")) as "Allowed Connections" count(eval(SITUATION="Connection_Refused")) as "Blocked Connections"</query>
-          <earliest>$time.earliest$</earliest>
-          <latest>$time.latest$</latest>
-        </search>
-        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
-        <option name="charting.axisTitleX.visibility">collapsed</option>
-        <option name="charting.axisTitleY.visibility">collapsed</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
-        <option name="charting.axisY2.abbreviation">auto</option>
-        <option name="charting.axisY2.enabled">1</option>
-        <option name="charting.axisY2.fields">"Blocked Connections"</option>
-        <option name="charting.chart.overlayFields">"Blocked Connections"</option>
-        <option name="charting.chart.showDataLabels">all</option>
-        <option name="charting.fieldColors">{"total": 0x639BF1, "splunkd":0xFF5A09}</option>
-        <option name="charting.legend.masterLegend">null</option>
-        <option name="charting.legend.placement">bottom</option>
-        <option name="height">300</option>
-        <drilldown>
-          <link>/app/forcepoint-solutions/ngfw_suspicious_traffic</link>
-        </drilldown>
-      </chart>
     </panel>
-  </row>
-  <row>
     <panel>
-      <title>Network Traffic Dashboard</title>
+      <title>Insights Dashboard</title>
       <single>
         <search>
-          <query>index="forcepoint" sourcetype="next-generation-firewall" HTTPREQUESTHOST=* | table _time HTTPREQUESTHOST
-| replace "www.*" with * in HTTPREQUESTHOST 
-| stats earliest(_time) as start by HTTPREQUESTHOST 
-| eval yesterday=relative_time(now(), "-1d@d") 
-| where start &gt; yesterday 
-| stats count</query>
-          <earliest>$time.earliest$</earliest>
-          <latest>$time.latest$</latest>
-        </search>
-        <option name="colorBy">value</option>
-        <option name="colorMode">none</option>
-        <option name="drilldown">all</option>
-        <option name="numberPrecision">0</option>
-        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
-        <option name="rangeValues">[1e+21]</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="showSparkline">1</option>
-        <option name="showTrendIndicator">1</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-        <option name="trendColorInterpretation">standard</option>
-        <option name="trendDisplayMode">absolute</option>
-        <option name="underLabel">New web Hosts detected in the last 24 hours</option>
-        <option name="unitPosition">after</option>
-        <option name="useColors">1</option>
-        <option name="useThousandSeparators">1</option>
-        <drilldown>
-          <link>/app/forcepoint-solutions/ngfw_network_traffic?form.unused=web</link>
-        </drilldown>
-      </single>
-      <single>
-        <search>
-          <query>index="forcepoint" sourcetype="next-generation-firewall" IPSAPPID=* | table _time IPSAPPID
-| stats earliest(_time) as start by IPSAPPID 
+          <query>index="forcepoint" sourcetype="cloud-access-security-broker" app=* | table _time app
+| stats earliest(_time) as start by app 
 | eval yesterday=relative_time(now(), "-1d@d") 
 | where start &gt; yesterday 
 | stats count</query>
@@ -250,7 +218,7 @@
         <option name="useColors">1</option>
         <option name="useThousandSeparators">1</option>
         <drilldown>
-          <link>/app/forcepoint-solutions/ngfw_network_traffic?form.unused=application</link>
+          <link>/app/forcepoint-solutions/casb_insights</link>
         </drilldown>
       </single>
     </panel>

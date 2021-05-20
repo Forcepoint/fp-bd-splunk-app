@@ -1,0 +1,701 @@
+<form refresh="3600">
+  <label>CASB Insights</label>
+ <search id="base_search">
+    <query>index="forcepoint" sourcetype="cloud-access-security-broker" | table _time app sourceServiceName deviceProcessName requestClientApplication suser duser dpriv outcome reason deviceFacility
+| rex field=requestClientApplication "(?&lt;EndpointType&gt;[^\/]+)\/(?&lt;EndpointOS&gt;[^\/]+)\/(?&lt;UserAgent&gt;.*)" 
+| rename sourceServiceName as "Managed" 
+| rename deviceProcessName as "Data Object" 
+| rename app as "Service Type"
+| rename suser as "Account" 
+| rename duser as "Target Account" 
+| rename dpriv as "User Privilege" 
+| rename outcome as "Activity Status" 
+| rename reason as "Action" 
+| rename deviceFacility as "ExternalIP" 
+</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+</search>
+  <fieldset submitButton="false" autoRun="true">
+    <html>
+      <style>
+          a.home_btn {
+            display:inline-block;
+            padding:0.35em 1.2em;
+            border:0.1em solid #808080;
+            margin:0 0.3em 0.3em 0;
+            border-radius:0.12em;
+            box-sizing: border-box;
+            text-decoration:none;
+            font-family:'Roboto',sans-serif;
+            font-weight:300;
+            color:#808080;
+            text-align:center;
+            transition: all 0.2s;
+        }
+        a.home_btn:hover {
+            color:#333333;
+        }
+        @media all and (max-width:30em) {
+            a.home_btn {
+                display:block;
+                margin:0.4em auto;
+            }
+        }
+       </style>
+      <div align="right">
+       <br/>
+       <a class="home_btn" role="button" href="/app/forcepoint-solutions/casb_summary">CASB Home Dashboard</a>
+       </div>
+    </html>
+    <input type="time" token="time" searchWhenChanged="true">
+      <label>Time Picker</label>
+      <default>
+        <earliest>@mon</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="link" token="unused" id="resized_input">
+      <label>Choose a view</label>
+      <choice value="info">Info</choice>
+      <choice value="both">Details</choice>
+      <default>Info</default>
+      <change>
+        <condition value="info">
+          <set token="showInfo">true</set>
+          <unset token="showTable"></unset>
+        </condition>
+        <condition value="table">
+          <set token="showTable">true</set>
+          <unset token="showInfo"></unset>
+        </condition>
+        <condition value="both">
+          <set token="showInfo">true</set>
+          <set token="showTable">true</set>
+        </condition>
+      </change>
+    </input>
+  </fieldset>
+  <row depends="$alwaysHideCSSPanel$">
+    <panel>
+      <html>
+        <style>
+          .dashboard-panel h2{
+            background:#177843 !important;
+            color:white !important;
+            text-align: center !important;
+            font-weight: bold !important;
+            border-top-right-radius: 15px;
+            border-top-left-radius: 15px;
+          }
+          #chartWithHiddenDataLabels .highcharts-series-1 .highcharts-data-label text tspan 
+          {
+            visibility:hidden !important;
+          }
+          #chartWithHiddenDataLabels .highcharts-series-2 .highcharts-data-label text tspan 
+          {
+            visibility:hidden !important;insights
+          }
+        </style>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Applications</title>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query> | stats count by "Service Type" 
+| stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Overall applications detected in traffic</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "Service Type" 
+| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">New network application detected in the last 24 hours</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "Service Type"
+| eval last_week_up_todate=relative_time(now(), "-7d@d") 
+| where start &gt; last_week_up_todate 
+| stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">New network application detected in last 7 days</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table depends="$showTable$">
+        <title>Application Count</title>
+        <search base="base_search">
+          <query>| stats count by "Service Type" | sort - count</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$showTable$">
+        <title>New Application Detected in the Last 24 Hours</title>
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "Service Type" 
+| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| table "Service Type" "First Detected Timestamp"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$showTable$">
+        <title>New Application Detected in the Last 7 Days</title>
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "Service Type" 
+| eval last_week_up_todate=relative_time(now(), "-7d@d") 
+| where start &gt; last_week_up_todate 
+| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| table "Service Type" "First Detected Timestamp"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table depends="$showTable$">
+        <title>Services use cases</title>
+        <search base="base_search">
+          <query>| stats count by "Service Type" "Data Object" | sort -count</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Users</title>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query> | stats count by "Account" | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Overall user count</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "Account"
+| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">New users detected in the last 24 hours</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "Account"
+| eval last_week_up_todate=relative_time(now(), "-7d@d") 
+| where start &gt; last_week_up_todate 
+| stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">New users detected in last 7 days</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table depends="$showTable$">
+        <title>User Activity Count</title>
+        <search base="base_search">
+          <query>| stats count by "Account" | sort - count</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$showTable$">
+        <title>New Account Detected in the Last 24 Hours</title>
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "Account" 
+| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| table "Account" "First Detected Timestamp"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$showTable$">
+        <title>New Account Detected in the Last 7 Days</title>
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "Account"
+| eval last_week_up_todate=relative_time(now(), "-7d@d") 
+| where start &gt; last_week_up_todate 
+| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| table "Account" "First Detected Timestamp"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table depends="$showTable$">
+        <title>User Activity</title>
+        <search base="base_search">
+          <query>| stats count by "Account" "Target Account" "User Privilege" "Service Type" "Activity Status" "Action" | sort - count</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Devices</title>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| search "EndpointOS" != "Unknown" | stats count by "EndpointOS" | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Overall endpoint OS count</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "EndpointOS"
+| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">New OS detected in the last 24 hours</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "EndpointOS"
+| eval last_week_up_todate=relative_time(now(), "-7d@d") 
+| where start &gt; last_week_up_todate 
+| stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">New OS detected in last 7 days</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table depends="$showTable$">
+        <title>Device Operating System</title>
+        <search base="base_search">
+          <query>| stats count by "EndpointOS" | sort - count</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$showTable$">
+        <title>New OS Detected in the Last 24 Hours</title>
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "EndpointOS" 
+| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| table "EndpointOS" "First Detected Timestamp"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$showTable$">
+        <title>New OS Detected in the Last 7 Days</title>
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "EndpointOS"
+| eval last_week_up_todate=relative_time(now(), "-7d@d") 
+| where start &gt; last_week_up_todate 
+| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| table "EndpointOS" "First Detected Timestamp"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+    <row>
+    <panel>
+      <title></title>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| search "EndpointOS" != "Unknown" | stats count by "EndpointType" | stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">Overall endpoint type count</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "EndpointType"
+| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">New endpoint type detected in the last 24 hours</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single depends="$showInfo$">
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "EndpointType"
+| eval last_week_up_todate=relative_time(now(), "-7d@d") 
+| where start &gt; last_week_up_todate 
+| stats count</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf8be34","0xf8be34"]</option>
+        <option name="rangeValues">[1e+23]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">New endpoint type detected in last 7 days</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table depends="$showTable$">
+        <title>Device Type</title>
+        <search base="base_search">
+          <query>| stats count by "EndpointType" | sort - count</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$showTable$">
+        <title>New Endpoint Type Detected in the Last 24 Hours</title>
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "EndpointType" 
+| eval yesterday=relative_time(now(), "-1d@d") 
+| where start &gt; yesterday 
+| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| table "EndpointType" "First Detected Timestamp"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$showTable$">
+        <title>New Endpoint Type Detected in the Last 7 Days</title>
+        <search base="base_search">
+          <query>| stats earliest(_time) as start by "EndpointType"
+| eval last_week_up_todate=relative_time(now(), "-7d@d") 
+| where start &gt; last_week_up_todate 
+| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| table "EndpointType" "First Detected Timestamp"</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table depends="$showTable$">
+        <title>Device Information</title>
+        <search base="base_search">
+          <query> | stats count by "Managed" "EndpointType" "EndpointOS" "UserAgent" "ExternalIP" | sort -count</query>
+        </search>
+        <option name="count">7</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

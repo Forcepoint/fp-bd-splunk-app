@@ -60,7 +60,7 @@
         <option name="useColors">1</option>
         <option name="useThousandSeparators">1</option>
         <drilldown>
-          <link target="_blank">/app/forcepoint-solutions/csg_web_security</link>
+          <link>/app/forcepoint-solutions/csg_web_security</link>
         </drilldown>
       </single>
     </panel>
@@ -103,7 +103,7 @@
         <option name="trellis.scales.shared">1</option>
         <option name="trellis.size">medium</option>
         <drilldown>
-          <link target="_blank">/app/forcepoint-solutions/csg_web</link>
+          <link>/app/forcepoint-solutions/csg_web</link>
         </drilldown>
       </chart>
     </panel>
@@ -149,7 +149,7 @@
         <option name="useColors">1</option>
         <option name="useThousandSeparators">1</option>
         <drilldown>
-          <link target="_blank">/app/forcepoint-solutions/csg_emails_security</link>
+          <link>/app/forcepoint-solutions/csg_emails_security</link>
         </drilldown>
       </single>
     </panel>
@@ -192,7 +192,7 @@
         <option name="trellis.scales.shared">1</option>
         <option name="trellis.size">medium</option>
         <drilldown>
-          <link target="_blank">/app/forcepoint-solutions/csg_emails</link>
+          <link>/app/forcepoint-solutions/csg_emails</link>
         </drilldown>
       </chart>
     </panel>
