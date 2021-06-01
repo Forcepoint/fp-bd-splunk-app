@@ -204,7 +204,7 @@
           <query>| stats earliest(_time) as start by "Service Type" 
 | eval yesterday=relative_time(now(), "-1d@d") 
 | where start &gt; yesterday 
-| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| eval "First Detected Timestamp" = strftime(start, "%Y-%m-%d %H:%M:%S") 
 | table "Service Type" "First Detected Timestamp"</query>
         </search>
         <option name="count">7</option>
@@ -223,7 +223,7 @@
           <query>| stats earliest(_time) as start by "Service Type" 
 | eval last_week_up_todate=relative_time(now(), "-7d@d") 
 | where start &gt; last_week_up_todate 
-| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| eval "First Detected Timestamp" = strftime(start, "%Y-%m-%d %H:%M:%S") 
 | table "Service Type" "First Detected Timestamp"</query>
         </search>
         <option name="count">7</option>
@@ -358,7 +358,7 @@
           <query>| stats earliest(_time) as start by "Account" 
 | eval yesterday=relative_time(now(), "-1d@d") 
 | where start &gt; yesterday 
-| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| eval "First Detected Timestamp" = strftime(start, "%Y-%m-%d %H:%M:%S") 
 | table "Account" "First Detected Timestamp"</query>
         </search>
         <option name="count">7</option>
@@ -377,7 +377,7 @@
           <query>| stats earliest(_time) as start by "Account"
 | eval last_week_up_todate=relative_time(now(), "-7d@d") 
 | where start &gt; last_week_up_todate 
-| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| eval "First Detected Timestamp" = strftime(start, "%Y-%m-%d %H:%M:%S") 
 | table "Account" "First Detected Timestamp"</query>
         </search>
         <option name="count">7</option>
@@ -512,7 +512,7 @@
           <query>| stats earliest(_time) as start by "EndpointOS" 
 | eval yesterday=relative_time(now(), "-1d@d") 
 | where start &gt; yesterday 
-| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| eval "First Detected Timestamp" = strftime(start, "%Y-%m-%d %H:%M:%S") 
 | table "EndpointOS" "First Detected Timestamp"</query>
         </search>
         <option name="count">7</option>
@@ -531,7 +531,7 @@
           <query>| stats earliest(_time) as start by "EndpointOS"
 | eval last_week_up_todate=relative_time(now(), "-7d@d") 
 | where start &gt; last_week_up_todate 
-| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| eval "First Detected Timestamp" = strftime(start, "%Y-%m-%d %H:%M:%S") 
 | table "EndpointOS" "First Detected Timestamp"</query>
         </search>
         <option name="count">7</option>
@@ -648,7 +648,7 @@
           <query>| stats earliest(_time) as start by "EndpointType" 
 | eval yesterday=relative_time(now(), "-1d@d") 
 | where start &gt; yesterday 
-| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| eval "First Detected Timestamp" = strftime(start, "%Y-%m-%d %H:%M:%S") 
 | table "EndpointType" "First Detected Timestamp"</query>
         </search>
         <option name="count">7</option>
@@ -667,7 +667,7 @@
           <query>| stats earliest(_time) as start by "EndpointType"
 | eval last_week_up_todate=relative_time(now(), "-7d@d") 
 | where start &gt; last_week_up_todate 
-| eval "First Seen" = strftime(start, "%Y-%m-%d %H:%M:%S") 
+| eval "First Detected Timestamp" = strftime(start, "%Y-%m-%d %H:%M:%S") 
 | table "EndpointType" "First Detected Timestamp"</query>
         </search>
         <option name="count">7</option>

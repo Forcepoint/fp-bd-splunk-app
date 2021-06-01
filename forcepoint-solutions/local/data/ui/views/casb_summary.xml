@@ -4,7 +4,7 @@
     <input type="time" token="time" searchWhenChanged="true">
       <label>Time Picker</label>
       <default>
-        <earliest>@w0</earliest>
+        <earliest>-7d@h</earliest>
         <latest>now</latest>
       </default>
     </input>
