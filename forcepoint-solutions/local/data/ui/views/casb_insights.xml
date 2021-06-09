@@ -413,7 +413,7 @@
       <title>Devices</title>
       <single depends="$showInfo$">
         <search base="base_search">
-          <query>| search "EndpointOS" != "Unknown" | stats count by "EndpointOS" | stats count</query>
+          <query> | stats count by "EndpointOS" | stats count</query>
         </search>
         <option name="colorBy">value</option>
         <option name="colorMode">none</option>
@@ -549,7 +549,7 @@
       <title></title>
       <single depends="$showInfo$">
         <search base="base_search">
-          <query>| search "EndpointOS" != "Unknown" | stats count by "EndpointType" | stats count</query>
+          <query> | stats count by "EndpointType" | stats count</query>
         </search>
         <option name="colorBy">value</option>
         <option name="colorMode">none</option>
